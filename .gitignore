@@ -1,0 +1,31 @@
+# Environment and secrets
+.env
+*.env
+.env.*
+
+# Runtime data (sessions, memory, workspace)
+data/
+workspace/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp

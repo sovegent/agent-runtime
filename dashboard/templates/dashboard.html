@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agent Runtime — Dashboard</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0d0d0f;
+    --surface: #17171a;
+    --surface2: #1e1e22;
+    --border: rgba(255,255,255,0.08);
+    --border2: rgba(255,255,255,0.14);
+    --text: #e8e8ea;
+    --muted: #8a8a9a;
+    --accent: #7c6af7;
+    --accent2: #5c4ee0;
+    --green: #34d399;
+    --red: #f87171;
+    --amber: #fbbf24;
+    --blue: #60a5fa;
+    --mono: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+    --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+
+  body { background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 14px; line-height: 1.6; min-height: 100vh; }
+
+  /* Layout */
+  .layout { display: grid; grid-template-columns: 280px 1fr; height: 100vh; overflow: hidden; }
+  .sidebar { background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
+  .main { display: flex; flex-direction: column; overflow: hidden; }
+
+  /* Sidebar header */
+  .sidebar-header { padding: 20px 16px 12px; border-bottom: 1px solid var(--border); }
+  .logo { font-size: 13px; font-weight: 600; letter-spacing: .04em; color: var(--accent); text-transform: uppercase; }
+  .logo span { color: var(--muted); font-weight: 400; }
+  .subtitle { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+  /* Session list */
+  .sessions-header { padding: 12px 16px 8px; display: flex; justify-content: space-between; align-items: center; }
+  .sessions-label { font-size: 11px; font-weight: 600; color: var(--muted); letter-spacing: .06em; text-transform: uppercase; }
+  .refresh-btn { font-size: 11px; color: var(--accent); cursor: pointer; background: none; border: none; padding: 2px 6px; border-radius: 4px; }
+  .refresh-btn:hover { background: rgba(124,106,247,.15); }
+
+  .sessions-list { flex: 1; overflow-y: auto; padding: 4px 8px; }
+  .sessions-list::-webkit-scrollbar { width: 4px; }
+  .sessions-list::-webkit-scrollbar-track { background: transparent; }
+  .sessions-list::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+  .session-item { padding: 10px 10px; border-radius: 8px; cursor: pointer; margin-bottom: 2px; border: 1px solid transparent; transition: all .12s; }
+  .session-item:hover { background: var(--surface2); border-color: var(--border); }
+  .session-item.active { background: rgba(124,106,247,.12); border-color: rgba(124,106,247,.4); }
+
+  .session-id { font-family: var(--mono); font-size: 12px; font-weight: 600; color: var(--text); }
+  .session-agent { font-size: 11px; color: var(--accent); margin: 1px 0; }
+  .session-time { font-size: 11px; color: var(--muted); }
+  .session-meta { display: flex; gap: 8px; margin-top: 4px; align-items: center; }
+  .badge { font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: 10px; }
+  .badge-success { background: rgba(52,211,153,.15); color: var(--green); }
+  .badge-failed  { background: rgba(248,113,113,.15); color: var(--red); }
+  .badge-running { background: rgba(251,191,36,.15); color: var(--amber); }
+
+  .empty-state { padding: 24px 16px; text-align: center; color: var(--muted); font-size: 13px; }
+
+  /* Main area */
+  .main-header { padding: 16px 24px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+  .main-title { font-size: 15px; font-weight: 600; }
+  .main-meta { font-size: 12px; color: var(--muted); }
+
+  .main-content { flex: 1; overflow-y: auto; padding: 20px 24px; }
+
+  /* Welcome state */
+  .welcome { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center; color: var(--muted); }
+  .welcome-icon { font-size: 40px; margin-bottom: 12px; opacity: .4; }
+  .welcome h2 { font-size: 18px; font-weight: 500; color: var(--text); margin-bottom: 8px; }
+  .welcome p { font-size: 13px; max-width: 320px; line-height: 1.7; }
+
+  /* Stats row */
+  .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+  .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+  .stat-label { font-size: 11px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .05em; }
+  .stat-value { font-size: 22px; font-weight: 700; margin-top: 4px; font-family: var(--mono); }
+  .stat-value.green { color: var(--green); }
+  .stat-value.red { color: var(--red); }
+  .stat-value.blue { color: var(--blue); }
+  .stat-value.amber { color: var(--amber); }
+
+  /* Steps timeline */
+  .section-title { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 12px; }
+
+  .task-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; margin-bottom: 16px; }
+  .task-label { font-size: 11px; color: var(--muted); font-weight: 600; text-transform: uppercase; margin-bottom: 6px; }
+  .task-text { font-size: 14px; color: var(--text); line-height: 1.6; }
+
+  .output-card { background: var(--surface); border: 1px solid var(--green); border-radius: 10px; padding: 14px 16px; margin-bottom: 16px; }
+  .output-label { font-size: 11px; color: var(--green); font-weight: 600; text-transform: uppercase; margin-bottom: 6px; }
+  .output-text { font-size: 13px; color: var(--text); line-height: 1.7; white-space: pre-wrap; }
+
+  .steps-list { display: flex; flex-direction: column; gap: 8px; }
+  .step-item { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+  .step-header { padding: 10px 14px; display: flex; align-items: center; gap: 10px; cursor: pointer; }
+  .step-header:hover { background: var(--surface2); }
+  .step-num { font-family: var(--mono); font-size: 11px; color: var(--muted); font-weight: 600; min-width: 32px; }
+  .step-tool { font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 6px; background: rgba(124,106,247,.15); color: var(--accent); font-family: var(--mono); }
+  .step-success { color: var(--green); font-size: 13px; }
+  .step-fail { color: var(--red); font-size: 13px; }
+  .step-expand { margin-left: auto; color: var(--muted); font-size: 12px; transition: transform .15s; }
+  .step-expand.open { transform: rotate(180deg); }
+
+  .step-body { padding: 0 14px 12px; display: none; }
+  .step-body.open { display: block; }
+  .step-section { margin-top: 10px; }
+  .step-section-label { font-size: 10px; font-weight: 600; color: var(--muted); text-transform: uppercase; margin-bottom: 4px; }
+  .step-code { background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px; font-family: var(--mono); font-size: 12px; color: var(--text); white-space: pre-wrap; word-break: break-all; max-height: 200px; overflow-y: auto; }
+
+  /* Auto-refresh dot */
+  .live-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); display: inline-block; animation: pulse 2s ease-in-out infinite; }
+  @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:.3; } }
+</style>
+</head>
+<body>
+<div class="layout">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="logo">Agent Runtime <span>/ LiberLayer</span></div>
+      <div class="subtitle">Sovereign AI Infrastructure</div>
+    </div>
+    <div class="sessions-header">
+      <span class="sessions-label">Sessions</span>
+      <button class="refresh-btn" onclick="loadSessions()">↻ Refresh</button>
+    </div>
+    <div class="sessions-list" id="sessions-list">
+      <div class="empty-state">Loading sessions...</div>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+    <div class="main-header">
+      <div>
+        <div class="main-title" id="main-title">Select a session</div>
+        <div class="main-meta" id="main-meta">—</div>
+      </div>
+      <span class="live-dot" title="Dashboard active"></span>
+    </div>
+    <div class="main-content" id="main-content">
+      <div class="welcome">
+        <div class="welcome-icon">⬡</div>
+        <h2>Agent Runtime Dashboard</h2>
+        <p>Select a session from the sidebar to inspect its memory, steps, and output.</p>
+      </div>
+    </div>
+  </main>
+
+</div>
+
+<script>
+let activeId = null;
+
+async function loadSessions() {
+  const list = document.getElementById('sessions-list');
+  try {
+    const res = await fetch('/api/sessions?n=40');
+    const data = await res.json();
+    const sessions = data.sessions || [];
+
+    if (!sessions.length) {
+      list.innerHTML = '<div class="empty-state">No sessions yet.<br>Run an agent to get started.</div>';
+      return;
+    }
+
+    list.innerHTML = sessions.map(s => `
+      <div class="session-item ${s.id === activeId ? 'active' : ''}" onclick="loadSession('${s.id}')">
+        <div class="session-id">${s.id}</div>
+        <div class="session-agent">${s.agent || 'agent'}</div>
+        <div class="session-time">${fmt(s.updated_at)}</div>
+        <div class="session-meta">
+          <span class="badge badge-${statusColor(s.last_status)}">${s.last_status || 'unknown'}</span>
+          ${s.step_count ? `<span style="font-size:11px;color:var(--muted)">${s.step_count} steps</span>` : ''}
+        </div>
+      </div>
+    `).join('');
+  } catch(e) {
+    list.innerHTML = `<div class="empty-state">Error loading sessions</div>`;
+  }
+}
+
+function statusColor(s) {
+  if (!s) return 'running';
+  if (s === 'success' || s === 'complete') return 'success';
+  if (s === 'running') return 'running';
+  return 'failed';
+}
+
+async function loadSession(id) {
+  activeId = id;
+  loadSessions(); // refresh sidebar active state
+
+  document.getElementById('main-title').textContent = `Session ${id}`;
+  document.getElementById('main-meta').textContent = 'Loading...';
+  document.getElementById('main-content').innerHTML = '<div style="padding:40px;text-align:center;color:var(--muted)">Loading...</div>';
+
+  try {
+    const res = await fetch(`/api/sessions/${id}`);
+    if (!res.ok) { throw new Error('Not found'); }
+    const data = await res.json();
+    renderSession(data);
+  } catch(e) {
+    document.getElementById('main-content').innerHTML = `<div style="padding:40px;color:var(--red)">Error: ${e.message}</div>`;
+  }
+}
+
+function renderSession(data) {
+  const { session, entries, summary } = data;
+  document.getElementById('main-meta').textContent = `${session.agent || 'agent'} · ${fmt(session.updated_at)}`;
+
+  const task = entries.find(e => e.type === 'task');
+  const output = entries.find(e => e.type === 'final_output');
+  const steps = entries.filter(e => e.type === 'step');
+
+  let html = '';
+
+  // Stats
+  html += `<div class="stats-row">
+    <div class="stat-card"><div class="stat-label">Steps</div><div class="stat-value blue">${steps.length}</div></div>
+    <div class="stat-card"><div class="stat-label">Memory entries</div><div class="stat-value amber">${summary.entry_count}</div></div>
+    <div class="stat-card"><div class="stat-label">Status</div><div class="stat-value ${output ? 'green' : 'amber'}">${output ? '✓' : '⋯'}</div></div>
+    <div class="stat-card"><div class="stat-label">Session</div><div class="stat-value" style="font-size:16px;color:var(--accent)">${session.id}</div></div>
+  </div>`;
+
+  // Task
+  if (task) {
+    html += `<div class="task-card">
+      <div class="task-label">Task</div>
+      <div class="task-text">${esc(task.content)}</div>
+    </div>`;
+  }
+
+  // Output
+  if (output) {
+    html += `<div class="output-card">
+      <div class="output-label">✓ Final output</div>
+      <div class="output-text">${esc(output.content)}</div>
+    </div>`;
+  }
+
+  // Steps
+  if (steps.length) {
+    html += `<div class="section-title">${steps.length} execution steps</div><div class="steps-list">`;
+    steps.forEach((step, i) => {
+      const success = step.result?.success !== false;
+      html += `<div class="step-item">
+        <div class="step-header" onclick="toggleStep(this)">
+          <span class="step-num">step ${step.step || i+1}</span>
+          <span class="step-tool">${esc(step.tool)}</span>
+          <span class="${success ? 'step-success' : 'step-fail'}">${success ? '✓' : '✗'}</span>
+          <span class="step-expand">▾</span>
+        </div>
+        <div class="step-body">
+          <div class="step-section">
+            <div class="step-section-label">Input</div>
+            <div class="step-code">${esc(JSON.stringify(step.input, null, 2))}</div>
+          </div>
+          <div class="step-section">
+            <div class="step-section-label">Result</div>
+            <div class="step-code">${esc(JSON.stringify(step.result, null, 2))}</div>
+          </div>
+        </div>
+      </div>`;
+    });
+    html += '</div>';
+  }
+
+  document.getElementById('main-content').innerHTML = html;
+}
+
+function toggleStep(header) {
+  const body = header.nextElementSibling;
+  const arrow = header.querySelector('.step-expand');
+  body.classList.toggle('open');
+  arrow.classList.toggle('open');
+}
+
+function esc(s) {
+  if (s == null) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function fmt(ts) {
+  if (!ts) return '—';
+  try {
+    const d = new Date(ts);
+    return d.toLocaleString(undefined, { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
+  } catch { return ts; }
+}
+
+// Init
+loadSessions();
+setInterval(loadSessions, 10000); // auto-refresh sidebar every 10s
+</script>
+</body>
+</html>
