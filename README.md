@@ -1,8 +1,8 @@
 # Agent Runtime
 
-Runtime layer for executing AI agents and automation workflows in sovereign environments.
+Sovereign infrastructure for AI agents — agents owned by you, running on hardware you control.
 
-Part of the [LiberLayer](https://liberlayer.com) / Sovereign AI Stack.
+Chain-agnostic, launching on Cardano. Part of [LiberLayer](https://liberlayer.com).
 
 ---
 
@@ -356,23 +356,28 @@ python main.py "Continue the previous task" --session abc12345
 
 ---
 
-## Part of Sovereign AI Stack
+## How It Fits Together
 
-Agent Runtime is the execution layer within [Sovereign AI Stack](https://github.com/liberlayer/sovereign-ai-stack).
+Agent Runtime is the execution layer of LiberLayer's sovereign AI infrastructure.
 
 ```
-Sovereign AI Stack (LiberLayer)
-└── Agent Runtime          ← this repo
-    ├── LLM Providers      (Anthropic, OpenAI, Ollama)
-    ├── Tool System        (9 built-in tools)
-    ├── Memory Layer       (persistent, searchable)
-    └── Execution Loop     (ReAct, observable)
+Agent Runtime (LiberLayer)
+├── LLM Providers      (Anthropic, OpenAI, Ollama)
+├── Tool System        (9 built-in tools)
+├── Memory Layer       (persistent, searchable)
+└── Execution Loop     (ReAct, observable)
 ```
+
+---
+
+## License
+
+Apache License 2.0 — see [LICENSE](LICENSE).
 
 ---
 
 ## LiberLayer
 
-LiberLayer builds AI systems and infrastructure you own and control.
+LiberLayer builds sovereign infrastructure for AI agents — agents owned by you, not rented from a platform. Chain-agnostic, launching on Cardano.
 
 https://liberlayer.com
