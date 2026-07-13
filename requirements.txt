@@ -1,0 +1,21 @@
+# Agent Runtime — Python dependencies
+
+# ── Core (always required) ─────────────────────────────────────────────────
+anthropic>=0.40.0
+pyyaml>=6.0
+requests>=2.31.0
+
+# ── Scheduler ─────────────────────────────────────────────────────────────
+croniter>=2.0.0
+
+# ── Dashboard ─────────────────────────────────────────────────────────────
+flask>=3.0.0
+
+# ── Optional: SSH tool ─────────────────────────────────────────────────────
+# paramiko>=3.0.0
+
+# ── Optional: PostgreSQL database tool ────────────────────────────────────
+# psycopg2-binary>=2.9.0
+
+# ── Optional: OpenAI provider ─────────────────────────────────────────────
+# openai>=1.0.0

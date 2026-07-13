@@ -1,0 +1,66 @@
+# Agent Runtime Configuration
+# Environment variables override these values.
+# Never commit credentials — use environment variables for secrets.
+
+llm:
+  provider: anthropic          # anthropic | openai
+  model: claude-haiku-4-5-20251001
+  max_tokens: 4096
+  temperature: 0.0
+
+memory:
+  persist: true
+  storage_path: ./data/memory
+  session_ttl_hours: 24
+
+execution:
+  max_steps: 20
+  step_timeout_seconds: 30
+  log_level: INFO              # DEBUG | INFO | WARNING
+
+tools:
+  enabled:
+    - echo
+    - shell
+    - http
+    - file
+    # - ssh          # requires: pip install paramiko
+    # - database     # requires: connection_string below
+    # - notify       # requires: slack_webhook_url or smtp_host
+
+  # Shell
+  shell_timeout: 15
+  http_timeout: 20
+  allowed_shell_commands: null     # null = all allowed
+  workspace_path: ./workspace
+
+  # SSH — uncomment and fill to enable remote server management
+  # ssh_default_host: your.server.com
+  # ssh_default_user: ubuntu
+  # ssh_key_path: ~/.ssh/id_rsa
+  # ssh_timeout: 30
+  # ssh_allowed_hosts: null        # null = all allowed
+
+  # Database — uncomment to enable
+  # db_connection_string: ./data/agent.db   # SQLite path, or postgres://...
+  # db_type: sqlite                          # sqlite | postgres
+  # db_allow_writes: false                   # set true to allow INSERT/UPDATE/DELETE
+
+  # Notify — fill credentials to enable
+  # slack_webhook_url: https://hooks.slack.com/services/...
+  # smtp_host: smtp.gmail.com
+  # smtp_port: 587
+  # smtp_user: you@gmail.com
+  # smtp_password: your-app-password
+  # smtp_from: Agent Runtime <you@gmail.com>
+  # default_email_to: you@yourdomain.com
+
+# ── Ollama (local models, no API key needed) ──────────────────────────────
+# Uncomment and set provider: ollama to run fully locally.
+# Requires Ollama installed and running: https://ollama.com
+#
+# llm:
+#   provider: ollama
+#   model: llama3.2        # or mistral, qwen2.5, deepseek-r1, phi4, etc.
+#   ollama_base_url: http://localhost:11434
+#   ollama_timeout: 120    # seconds — local models can be slow on first run

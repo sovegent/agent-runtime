@@ -1,0 +1,101 @@
+# Agent Runtime — Docker Compose
+#
+# Starts:
+#   dashboard   — web UI at http://localhost:5001
+#   event_server — webhook listener at http://localhost:8080
+#   scheduler   — cron-driven agent execution
+#
+# All services share the same data volume so memory/sessions
+# are visible across all of them (and in the dashboard).
+#
+# Start everything:
+#   docker-compose up -d
+#
+# Just dashboard + event server (no scheduler):
+#   docker-compose up -d dashboard event_server
+#
+# Run a one-off agent task:
+#   docker-compose run --rm agent python main.py "your task here"
+#
+# View logs:
+#   docker-compose logs -f
+
+services:
+
+  # Web observability dashboard
+  dashboard:
+    build: .
+    command: python -m dashboard.app
+    ports:
+      - "5001:5001"
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - LLM_MODEL=${LLM_MODEL:-claude-haiku-4-5-20251001}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - DASHBOARD_PORT=5001
+    volumes:
+      - agent_data:/app/data
+      - agent_workspace:/app/workspace
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5001/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # HTTP event server — webhook listener
+  event_server:
+    build: .
+    command: python run_server.py
+    ports:
+      - "8080:8080"
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - LLM_MODEL=${LLM_MODEL:-claude-haiku-4-5-20251001}
+      - SERVER_PORT=8080
+      - AGENT_SECRET_TOKEN=${AGENT_SECRET_TOKEN:-}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    volumes:
+      - agent_data:/app/data
+      - agent_workspace:/app/workspace
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Scheduler — cron-driven autonomous execution
+  scheduler:
+    build: .
+    command: python run_scheduler.py
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - LLM_MODEL=${LLM_MODEL:-claude-haiku-4-5-20251001}
+      - MAX_STEPS=${MAX_STEPS:-20}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    volumes:
+      - agent_data:/app/data
+      - agent_workspace:/app/workspace
+    restart: unless-stopped
+
+  # One-off agent runner (not auto-started)
+  agent:
+    build: .
+    profiles: ["tools"]
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - LLM_MODEL=${LLM_MODEL:-claude-haiku-4-5-20251001}
+    volumes:
+      - agent_data:/app/data
+      - agent_workspace:/app/workspace
+
+volumes:
+  agent_data:
+    driver: local
+  agent_workspace:
+    driver: local
