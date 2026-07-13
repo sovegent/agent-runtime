@@ -1,3 +1,5 @@
+<p align="center"><img src=".github/sovegent-shield.svg" width="88" alt="Sovegent" /></p>
+
 # Agent Runtime
 
 Sovereign infrastructure for AI agents — agents owned by you, running on hardware you control.
